@@ -166,7 +166,6 @@ Manager.prototype = {
                     && this.craftIsUnlocked(item)
                 ) {
                     crafting(item);
-                    console.log('Crafted ' + item);
                 }
             }
         }
@@ -180,7 +179,6 @@ Manager.prototype = {
                 break;
             }
         }
-        console.debug('exceed for ' + name, result);
         return result;
     },
     build: function() {
@@ -192,7 +190,6 @@ Manager.prototype = {
                     && this.exceedBuildThreshold(item)
                     && this.buildIsUnlocked(item)
                 ) {
-                    console.log('Building ' + item);
                     build(item);
                 }
             }
@@ -220,21 +217,55 @@ Manager.prototype = {
         return false;
     }
 }
-var x = new Manager();
-x.start();
+
+var toggleOptionItem = function(item) {
+    if ( options.auto.build.items.hasOwnProperty(item) ) {
+        options.auto.build.items[item].enabled = !options.auto.build.items[item].enabled;
+    }
+    if ( options.auto.craft.items.hasOwnProperty(item) ) {
+        options.auto.craft.items[item].enabled = !options.auto.craft.items[item].enabled;
+    }
+}
+var updateThreshold = function(type) {
+    var curType = null;
+    switch (type) {
+        case 'build_thresh':
+            curType = 'build';
+            break;
+        case 'craft_thresh':
+            curType = 'craft';
+            break;
+        default:
+            return false;
+    }
+
+    var newValue = prompt("Please enter new [" + curType + "] threshold in percents", options.auto[curType].threshold);
+
+    if (newValue != null) {
+        if (newValue < 0 ) {
+            newValue = 0;
+        } else if (newValue > 100) {
+            newValue = 100;
+        }
+        options.auto[curType].threshold = newValue;
+        //update text
+        $('#'+curType+'_thresh_value').text(newValue);
+    }
+};
 
 var appendAutoTab = function() {
     var htmlTab = '<li id="autokraftpane"><a data-toggle="tab" href="#autokraft" aria-expanded="false">AutoKraft</li>';
     $('#legacypane').after(htmlTab);
 
-    var buildingsList, craftingList;
-    buildingsList = craftingList =  '';
+    var buildingsList, craftingList, buildingThreshold, craftingThreshold;
+    buildingsList = craftingList = '';
 
     for (var item in options.auto.build.items ) {
-        if (options.auto.build.items[item]) {
+        var checked = '';
+        if (options.auto.build.items[item].enabled) {
             checked = 'checked';
         }
-        buildingsList += '<input name="'+ item +'"type="checkbox" ' + checked + ' />'+item+'<br/>';
+        buildingsList += '<div class="block" style="display: inline-block;"><input name="'+ item +'" type="checkbox" ' + checked + ' class="autokraft_option"/>'+item+'</div>';
     }
 
     for (var item in options.auto.craft.items ) {
@@ -242,17 +273,31 @@ var appendAutoTab = function() {
         if (options.auto.craft.items[item]) {
             checked = 'checked';
         }
-        craftingList += '<input name="'+ item +'"type="checkbox" ' + checked + ' />'+item+'<br/>';
+        craftingList += '<div class="block" style="display: inline-block;"> <input name="'+ item +'" type="checkbox" ' + checked + ' class="autokraft_option" />'+item+'</div>';
     }
 
-    var htmlSettings = '<div id="autokraft" class="autokraft tab-pane fade"><h3>AutoKraft settings</h3><div class="craftline">' +
-        '<div id="Build">' +
+    buildingThreshold = '<div><span id="build_thresh" class="option_threshold">Building threshold:<span id="build_thresh_value">' + options.auto.build.threshold + '</span>% </span></div>';
+    craftingThreshold = '<div><span id="craft_thresh" class="option_threshold">Crafting threshold:<span id="craft_thresh_value">' + options.auto.craft.threshold + '</span>% </span></div>';
+
+    var htmlSettings = '<div id="autokraft" class="autokraft tab-pane fade"><h3>AutoKraft settings</h3>' +
+        '<div class="craftline" style="margin-left: 500px;">' +
+        '<div id="Build"><h4>Buildings</h4>' +
+            buildingThreshold +
             buildingsList +
         '</div>' +
-        '<div id="Craft"></div>' + craftingList
+        '<div id="Craft"><h4>Crafting</h4>' + craftingThreshold + craftingList + '</div>'
         '</div></div>';
     $('#legacy').after(htmlSettings);
+    $('.autokraft_option').on('click', function(e) {
+        toggleOptionItem(this.name);
+    });
+    $('.option_threshold').on('click', function(e) {
+        updateThreshold(this.id)
+    });
 
 }
 
 appendAutoTab();
+
+var x = new Manager();
+x.start();
