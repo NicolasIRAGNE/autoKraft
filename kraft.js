@@ -328,3 +328,44 @@ appendAutoTab();
 
 var x = new Manager();
 x.start();
+
+
+function dobet(roundsAmount) {
+    var minbet, maxbet, currentBet, goldEarned, round, betLog;
+    round = 0;
+    minbet = 0.5;
+    maxbet = $('input.betamount').attr("max");
+    goldEarned = 0;
+    currentBet = minbet;
+    betLog = '';
+
+    for (var rNum = 0; rNum < roundsAmount; rNum ++ ) {
+        // place a bet
+        if (items['gold'] < currentBet) {
+            console.log('Run out of gold to gamble!');
+            break;
+        }
+        $('input.betamount').val(currentBet);
+        bet('low');
+        // parse casino log
+        var casinoLog = $('.casinolog').text();
+        var gameResult = casinoLog.match(/Sorry/);
+        var betResult = $('.betresult').text();
+        if (gameResult != null) {
+            betLog += "[LOSE] " + currentBet + " for low, got " + betResult + "\n";
+            goldEarned = goldEarned - currentBet;
+            currentBet = currentBet * 2;
+            if (currentBet > maxbet) {
+                console.log('Maxbet exceeded! Earnings: ' + goldEarned + ' gold');
+            }
+        } else {
+            betLog += "[WON] " + currentBet + " for low, got " + betResult + "\n";
+            goldEarned = goldEarned + currentBet;
+            currentBet = minbet;
+        }
+        round = round + 1;
+        console.log("round #" + round + ", earning: " + goldEarned);
+    }
+    console.log("Rounds played:" + round +", earned:" + goldEarned);
+    console.log(betLog);
+}
