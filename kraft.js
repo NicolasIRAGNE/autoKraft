@@ -61,16 +61,31 @@ var options = {
         craft: {
             enabled: true,
             items: {
-                pickaxe: false,
-                spear: false,
-                sword: false,
-                block: true,
-                coin: true
+                pickaxe: {
+                    enabled: false,
+                    uses: ["wood", "copper"]
+                },
+                spear: {
+                    enabled: false,
+                    uses: ["wood", "copper"]
+                },
+                sword: {
+                    enabled: false,
+                    uses: ["iron"]
+                },
+                block: {
+                    enabled: true,
+                    uses: ["wood", "mineral"]
+                },
+                coin: {
+                    enabled: true,
+                    uses: ["gold"]
+                }
             },
             threshold: 100
         }
     }
-}
+};
 
 var getBuildSelector = function(name) {
     var selector = null;
@@ -114,7 +129,7 @@ var getBuildSelector = function(name) {
     }
     return selector;
 
-}
+};
 
 var getCraftSelector = function(name) {
     var selector = null;
@@ -136,7 +151,7 @@ var getCraftSelector = function(name) {
             break;
     }
     return selector;
-}
+};
 
 var Manager = function() {};
 Manager.prototype = {
@@ -158,33 +173,10 @@ Manager.prototype = {
             this.craft();
         }
     },
-    craft: function() {
-        var items = options.auto.craft.items;
-        for (var item in items) {
-            if ( items.hasOwnProperty(item) && items[item] == true) {
-                if (this.canCraft(item)
-                    && this.craftIsUnlocked(item)
-                ) {
-                    crafting(item);
-                }
-            }
-        }
-    },
-    exceedBuildThreshold: function(name) {
-        var limitedResources = options.auto.craft.items[name]
-        var result = true;
-        for (var resourceName in limitedResources) {
-            if ( items[resourceName] < maximums[resourceName] * options.auto.build.threshold / 100 ) {
-                result = false;
-                break;
-            }
-        }
-        return result;
-    },
-    build: function() {
+    build: function () {
         var items = options.auto.build.items;
         for (var item in items) {
-            if ( items.hasOwnProperty(item) && items[item].enabled == true) {
+            if (items.hasOwnProperty(item) && items[item].enabled == true) {
                 if (
                     this.canBuild(item)
                     && this.exceedBuildThreshold(item)
@@ -194,6 +186,41 @@ Manager.prototype = {
                 }
             }
         }
+    },
+    craft: function () {
+        var craftItems = options.auto.craft.items;
+        for (var item in craftItems) {
+            if (craftItems[item].enabled == true
+                && this.canCraft(item)
+                && this.craftIsUnlocked(item)
+                && this.exceedCraftThreshold(item)
+            ) {
+                crafting(item);
+            }
+        }
+    },
+    exceedBuildThreshold: function(name) {
+        var limitedResources = options.auto.build.items[name];
+        var result = true;
+        for (var resourceName in limitedResources) {
+            if ( items[resourceName] < maximums[resourceName] * options.auto.build.threshold / 100 ) {
+                result = false;
+                break;
+            }
+        }
+        return result;
+    },
+    exceedCraftThreshold: function (name) {
+        var limitedResources = options.auto.craft.items[name].uses;
+        var result = true;
+        for (var resIdx in limitedResources) {
+            var resourceName = limitedResources[resIdx];
+            if (items[resourceName] < maximums[resourceName] * options.auto.craft.threshold / 100) {
+                result = false;
+                break;
+            }
+        }
+        return result;
     },
     canCraft: function(name) {
         if ( $(getCraftSelector(name) + '.unavailable').length == 0 ) {
@@ -216,7 +243,7 @@ Manager.prototype = {
         }
         return false;
     }
-}
+};
 
 var toggleOptionItem = function(item) {
     if ( options.auto.build.items.hasOwnProperty(item) ) {
@@ -225,7 +252,7 @@ var toggleOptionItem = function(item) {
     if ( options.auto.craft.items.hasOwnProperty(item) ) {
         options.auto.craft.items[item].enabled = !options.auto.craft.items[item].enabled;
     }
-}
+};
 var updateThreshold = function(type) {
     var curType = null;
     switch (type) {
@@ -285,7 +312,7 @@ var appendAutoTab = function() {
             buildingThreshold +
             buildingsList +
         '</div>' +
-        '<div id="Craft"><h4>Crafting</h4>' + craftingThreshold + craftingList + '</div>'
+        '<div id="Craft"><h4>Crafting</h4>' + craftingThreshold + craftingList + '</div>' +
         '</div></div>';
     $('#legacy').after(htmlSettings);
     $('.autokraft_option').on('click', function(e) {
@@ -295,7 +322,7 @@ var appendAutoTab = function() {
         updateThreshold(this.id)
     });
 
-}
+};
 
 appendAutoTab();
 
