@@ -3,7 +3,7 @@ var options = {
     interval: 1000,
 
     auto: {
-        build : {
+        build: {
             enabled: true,
             items: {
                 lumbermill: {
@@ -12,11 +12,11 @@ var options = {
                 },
                 mine: {
                     enabled: true,
-                    uses: ["wood","mineral"]
+                    uses: ["wood", "mineral"]
                 },
                 warehouse: {
                     enabled: true,
-                    uses: ["wood","mineral"]
+                    uses: ["wood", "mineral"]
                 },
                 fountain: {
                     enabled: true,
@@ -28,19 +28,19 @@ var options = {
                 },
                 house: {
                     enabled: true,
-                    uses: ["wood","mineral","food"]
+                    uses: ["wood", "mineral", "food"]
                 },
                 library: {
                     enabled: true,
-                    uses: ["wood","mineral"]
+                    uses: ["wood", "mineral"]
                 },
                 banner: {
                     enabled: true,
-                    uses: ["wood","copper"]
+                    uses: ["wood", "copper"]
                 },
                 foundry: {
                     enabled: false,
-                    uses: ["copper","mineral"]
+                    uses: ["copper", "mineral"]
                 },
                 barn: {
                     enabled: true,
@@ -53,6 +53,14 @@ var options = {
                 market: {
                     enabled: false,
                     uses: ["wood"]
+                },
+                statue: {
+                    enabled: false,
+                    uses: ["bronze"]
+                },
+                kiln: {
+                    enabled: false,
+                    uses: ["mineral", "block"]
                 }
             },
             threshold: 60
@@ -63,23 +71,98 @@ var options = {
             items: {
                 pickaxe: {
                     enabled: false,
-                    uses: ["wood", "copper"]
+                    cost: {
+                        "wood": 20,
+                        "copper": 1
+                    }
                 },
                 spear: {
                     enabled: false,
-                    uses: ["wood", "copper"]
+                    cost: {"wood": 50, "copper": 3}
                 },
                 sword: {
                     enabled: false,
-                    uses: ["iron"]
+                    cost: {"iron": 10}
                 },
                 block: {
-                    enabled: true,
-                    uses: ["wood", "mineral"]
+                    enabled: false,
+                    cost: {"wood": 100, "mineral": 200}
                 },
                 coin: {
+                    enabled: false,
+                    cost: {"gold": 5}
+                },
+                bronze: {
                     enabled: true,
-                    uses: ["gold"]
+                    cost: {"copper": 40, "tin": 10}
+                },
+                structure: {
+                    enabled: false,
+                    cost: {"wood": 1000, "iron": 20}
+                },
+                armor: {
+                    enabled: false,
+                    cost: {"steel": 30, "bronze": 5}
+                },
+                supplies: {
+                    enabled: false,
+                    cost: {"plank": 5, "food": 500, "water": 100}
+                },
+                chest: {
+                    enabled: false,
+                    cost: {"plank": 100, "steel": 30, "bronze": 5, "lock": 1}
+                },
+                glass: {
+                    enabled: false,
+                    cost: {"tin": 50, "sand": 200, "coal": 50}
+                },
+                bottle: {
+                    enabled: false,
+                    cost: {"glass": 5}
+                },
+                greatsword: {
+                    enabled: false,
+                    cost: {"steel": 100}
+                },
+                frame: {
+                    enabled: false,
+                    cost: {"block": 500, "structure": 100, "steel": 100}
+                },
+                brick: {
+                    enabled: false,
+                    cost: {"sand": 500, "clay": 150}
+                },
+                gunpowder: {
+                    enabled: false,
+                    cost: {"sand": 300, "coal": 100, "bronze": 10, "chemicals": 5}
+                },
+                ammo: {
+                    enabled: false,
+                    cost: {"iron": 50, "gunpowder": 10}
+                },
+                musket: {
+                    enabled: false,
+                    cost: {"wood": 500, "iron": 500, "steel": 300}
+                },
+                plate: {
+                    enabled: false,
+                    cost: {"copper": 400, "iron": 200, "nickel": 10}
+                },
+                engine: {
+                    enabled: false,
+                    cost: {"steel": 400, "plate": 100, "bronze": 200}
+                },
+                book: {
+                    enabled: false,
+                    cost: {"knowledge": 2500}
+                },
+                strategy: {
+                    enabled: false,
+                    cost: {"plans": 2500}
+                },
+                patent: {
+                    enabled: false,
+                    cost: {"coin": 2500}
                 }
             },
             threshold: 100
@@ -87,7 +170,7 @@ var options = {
     }
 };
 
-var getBuildSelector = function(name) {
+var getBuildSelector = function (name) {
     var selector = null;
     switch (name) {
         case 'lumbermill':
@@ -131,7 +214,7 @@ var getBuildSelector = function(name) {
 
 };
 
-var getCraftSelector = function(name) {
+var getCraftSelector = function (name) {
     var selector = null;
     switch (name) {
         case 'pickaxe':
@@ -153,23 +236,24 @@ var getCraftSelector = function(name) {
     return selector;
 };
 
-var Manager = function() {};
+var Manager = function () {
+};
 Manager.prototype = {
     self: this,
-    start: function() {
-        this.loop = setInterval( this.doStuff.bind(this) , options.interval);
+    start: function () {
+        this.loop = setInterval(this.doStuff.bind(this), options.interval);
         console.log('Started');
     },
-    stop: function() {
+    stop: function () {
         clearInterval(this.loop);
         this.loop = null;
         console.log('Stopped');
     },
-    doStuff: function() {
-        if (options.auto.build.enabled ) {
+    doStuff: function () {
+        if (options.auto.build.enabled) {
             this.build();
         }
-        if (options.auto.craft.enabled ) {
+        if (options.auto.craft.enabled) {
             this.craft();
         }
     },
@@ -199,11 +283,21 @@ Manager.prototype = {
             }
         }
     },
-    exceedBuildThreshold: function(name) {
-        var limitedResources = options.auto.build.items[name];
+    getResourceValue: function (name) {
+        if (craft.hasOwnProperty(name)) {
+            return craft[name];
+        }
+        if (items.hasOwnProperty(name) >= 0) {
+            return items[name];
+        }
+        return null
+    },
+    exceedBuildThreshold: function (name) {
+        var limitedResources = options.auto.build.items[name].uses;
         var result = true;
-        for (var resourceName in limitedResources) {
-            if ( items[resourceName] < maximums[resourceName] * options.auto.build.threshold / 100 ) {
+        for (var resIdx in limitedResources) {
+            var resourceName = limitedResources[resIdx];
+            if (this.getResourceValue(resourceName) < maximums[resourceName] * options.auto.build.threshold / 100) {
                 result = false;
                 break;
             }
@@ -211,49 +305,51 @@ Manager.prototype = {
         return result;
     },
     exceedCraftThreshold: function (name) {
-        var limitedResources = options.auto.craft.items[name].uses;
+        var limitedResources = options.auto.craft.items[name].cost;
         var result = true;
-        for (var resIdx in limitedResources) {
-            var resourceName = limitedResources[resIdx];
-            if (items[resourceName] < maximums[resourceName] * options.auto.craft.threshold / 100) {
+        for (var resourceName in limitedResources) {
+            var resourceCost = limitedResources[resourceName];
+            if (this.getResourceValue(resourceName) < maximums[resourceName] * options.auto.craft.threshold / 100 ||
+                this.getResourceValue(resourceName) < resourceCost
+            ) {
                 result = false;
                 break;
             }
         }
         return result;
     },
-    canCraft: function(name) {
-        if ( $(getCraftSelector(name) + '.unavailable').length == 0 ) {
+    canCraft: function (name) {
+        if ($(getCraftSelector(name) + '.unavailable').length == 0) {
             return true
         }
         return false;
     },
-    craftIsUnlocked: function(name) {
-        return ( unlocked.hasOwnProperty('.craft_' + name ) && unlocked['.craft_' + name] == 1);
+    craftIsUnlocked: function (name) {
+        return ( unlocked.hasOwnProperty('.craft_' + name) && unlocked['.craft_' + name] == 1);
     },
-    buildIsUnlocked: function(name) {
-        if (name == 'lumbermill' || name == 'mine' ) {
+    buildIsUnlocked: function (name) {
+        if (name == 'lumbermill' || name == 'mine') {
             return true;
         }
-        return ( unlocked.hasOwnProperty('.build_' + name ) && unlocked['.build_' + name] == 1);
+        return ( unlocked.hasOwnProperty('.build_' + name) && unlocked['.build_' + name] == 1);
     },
-    canBuild: function(name) {
-        if ( $(getBuildSelector(name) + '.unavailable').length == 0 ) {
+    canBuild: function (name) {
+        if ($(getBuildSelector(name) + '.unavailable').length == 0) {
             return true
         }
         return false;
     }
 };
 
-var toggleOptionItem = function(item) {
-    if ( options.auto.build.items.hasOwnProperty(item) ) {
+var toggleOptionItem = function (item) {
+    if (options.auto.build.items.hasOwnProperty(item)) {
         options.auto.build.items[item].enabled = !options.auto.build.items[item].enabled;
     }
-    if ( options.auto.craft.items.hasOwnProperty(item) ) {
+    if (options.auto.craft.items.hasOwnProperty(item)) {
         options.auto.craft.items[item].enabled = !options.auto.craft.items[item].enabled;
     }
 };
-var updateThreshold = function(type) {
+var updateThreshold = function (type) {
     var curType = null;
     switch (type) {
         case 'build_thresh':
@@ -269,38 +365,38 @@ var updateThreshold = function(type) {
     var newValue = prompt("Please enter new [" + curType + "] threshold in percents", options.auto[curType].threshold);
 
     if (newValue != null) {
-        if (newValue < 0 ) {
+        if (newValue < 0) {
             newValue = 0;
         } else if (newValue > 100) {
             newValue = 100;
         }
         options.auto[curType].threshold = newValue;
         //update text
-        $('#'+curType+'_thresh_value').text(newValue);
+        $('#' + curType + '_thresh_value').text(newValue);
     }
 };
 
-var appendAutoTab = function() {
+var appendAutoTab = function () {
     var htmlTab = '<li id="autokraftpane"><a data-toggle="tab" href="#autokraft" aria-expanded="false">AutoKraft</li>';
     $('#legacypane').after(htmlTab);
 
     var buildingsList, craftingList, buildingThreshold, craftingThreshold;
     buildingsList = craftingList = '';
 
-    for (var item in options.auto.build.items ) {
+    for (var item in options.auto.build.items) {
         var checked = '';
         if (options.auto.build.items[item].enabled) {
             checked = 'checked';
         }
-        buildingsList += '<div class="block" style="display: inline-block;"><input name="'+ item +'" type="checkbox" ' + checked + ' class="autokraft_option"/>'+item+'</div>';
+        buildingsList += '<div class="block" style="display: inline-block;"><input name="' + item + '" type="checkbox" ' + checked + ' class="autokraft_option"/>' + item + '</div>';
     }
 
-    for (var item in options.auto.craft.items ) {
+    for (var item in options.auto.craft.items) {
         var checked = '';
         if (options.auto.craft.items[item]) {
             checked = 'checked';
         }
-        craftingList += '<div class="block" style="display: inline-block;"> <input name="'+ item +'" type="checkbox" ' + checked + ' class="autokraft_option" />'+item+'</div>';
+        craftingList += '<div class="block" style="display: inline-block;"> <input name="' + item + '" type="checkbox" ' + checked + ' class="autokraft_option" />' + item + '</div>';
     }
 
     buildingThreshold = '<div><span id="build_thresh" class="option_threshold">Building threshold:<span id="build_thresh_value">' + options.auto.build.threshold + '</span>% </span></div>';
@@ -309,16 +405,16 @@ var appendAutoTab = function() {
     var htmlSettings = '<div id="autokraft" class="autokraft tab-pane fade"><h3>AutoKraft settings</h3>' +
         '<div class="craftline" style="margin-left: 500px;">' +
         '<div id="Build"><h4>Buildings</h4>' +
-            buildingThreshold +
-            buildingsList +
+        buildingThreshold +
+        buildingsList +
         '</div>' +
         '<div id="Craft"><h4>Crafting</h4>' + craftingThreshold + craftingList + '</div>' +
         '</div></div>';
     $('#legacy').after(htmlSettings);
-    $('.autokraft_option').on('click', function(e) {
+    $('.autokraft_option').on('click', function (e) {
         toggleOptionItem(this.name);
     });
-    $('.option_threshold').on('click', function(e) {
+    $('.option_threshold').on('click', function (e) {
         updateThreshold(this.id)
     });
 
@@ -339,7 +435,7 @@ function dobet(roundsAmount) {
     currentBet = minbet;
     betLog = '';
 
-    for (var rNum = 0; rNum < roundsAmount; rNum ++ ) {
+    for (var rNum = 0; rNum < roundsAmount; rNum++) {
         // place a bet
         if (items['gold'] < currentBet) {
             console.log('Run out of gold to gamble!');
@@ -366,6 +462,6 @@ function dobet(roundsAmount) {
         round = round + 1;
         console.log("round #" + round + ", earning: " + goldEarned);
     }
-    console.log("Rounds played:" + round +", earned:" + goldEarned);
+    console.log("Rounds played:" + round + ", earned:" + goldEarned);
     console.log(betLog);
 }
