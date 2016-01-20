@@ -1,3 +1,8 @@
+//css styles
+var stylesheet = document.styleSheets;
+stylesheet[0].addRule('.overResLimit', '{ border: 1px solid red}', 0);
+stylesheet[0].addRule('.resLimitReached', '{ color: maroon } ', 0);
+
 var options = {
     debug: true,
     interval: 1000,
@@ -236,12 +241,25 @@ var getCraftSelector = function (name) {
     return selector;
 };
 
-var Manager = function () {
-};
+var Manager = function () {};
+
 Manager.prototype = {
     self: this,
+    saveSettings: function() {
+        localStorage.setItem('autokraft_options', JSON.stringify(options));
+        console.log('saved settings!')
+    },
+    loadSettings: function() {
+        var retrievedObject = localStorage.getItem('autokraft_options');
+        if (retrievedObject != null) {
+            console.debug('Loaded:', JSON.parse(retrievedObject));
+            options = JSON.parse(retrievedObject);
+        }
+    },
     start: function () {
         this.loop = setInterval(this.doStuff.bind(this), options.interval);
+        this.loadSettings();
+        appendAutoTab();
         console.log('Started');
     },
     stop: function () {
@@ -255,6 +273,26 @@ Manager.prototype = {
         }
         if (options.auto.craft.enabled) {
             this.craft();
+        }
+        this.updateResourceColors();
+    },
+    updateResourceColors: function() {
+        var resourceRows = $('.inventory table tbody tr').contents();
+        var blockStart = false;
+        for (var i=0; i<resourceRows.length; i++) {
+            if ($(resourceRows[i]).hasClass('resource')) {
+                blockStart = true;
+            }
+            if (blockStart && $(resourceRows[i]).hasClass('amount')) {
+                var rowContent = $(resourceRows[i]).text();
+                if (parseInt (rowContent.split('/')[0]) ==
+                    parseInt (rowContent.split('/')[1])) {
+                    $(resourceRows[i]).addClass('resLimitReached');
+                } else {
+                    $(resourceRows[i]).removeClass('resLimitReached');
+                }
+                blockStart = false;
+            }
         }
     },
     build: function () {
@@ -344,9 +382,11 @@ Manager.prototype = {
 var toggleOptionItem = function (item) {
     if (options.auto.build.items.hasOwnProperty(item)) {
         options.auto.build.items[item].enabled = !options.auto.build.items[item].enabled;
+        kraftManager.saveSettings();
     }
     if (options.auto.craft.items.hasOwnProperty(item)) {
         options.auto.craft.items[item].enabled = !options.auto.craft.items[item].enabled;
+        kraftManager.saveSettings();
     }
 };
 var updateThreshold = function (type) {
@@ -393,7 +433,7 @@ var appendAutoTab = function () {
 
     for (var item in options.auto.craft.items) {
         var checked = '';
-        if (options.auto.craft.items[item]) {
+        if (options.auto.craft.items[item].enabled) {
             checked = 'checked';
         }
         craftingList += '<div class="block" style="display: inline-block;"> <input name="' + item + '" type="checkbox" ' + checked + ' class="autokraft_option" />' + item + '</div>';
@@ -420,10 +460,15 @@ var appendAutoTab = function () {
 
 };
 
-appendAutoTab();
+var appendGamblingBtn = function() {
+    var html = '<button onclick=\'dobet(100)\')>Bet doubling</button>';
+    $('.casinolog').before(html);
+}
 
-var x = new Manager();
-x.start();
+appendGamblingBtn();
+
+var kraftManager = new Manager();
+kraftManager.start();
 
 
 function dobet(roundsAmount) {
@@ -453,6 +498,7 @@ function dobet(roundsAmount) {
             currentBet = currentBet * 2;
             if (currentBet > maxbet) {
                 console.log('Maxbet exceeded! Earnings: ' + goldEarned + ' gold');
+                break;
             }
         } else {
             betLog += "[WON] " + currentBet + " for low, got " + betResult + "\n";
