@@ -66,6 +66,10 @@ var options = {
                 kiln: {
                     enabled: false,
                     uses: ["mineral", "block"]
+                },
+                towncenter: {
+                    enabled: false,
+                    uses: ["block","structure","coin"]
                 }
             },
             threshold: 60
@@ -247,14 +251,16 @@ Manager.prototype = {
     self: this,
     saveSettings: function() {
         localStorage.setItem('autokraft_options', JSON.stringify(options));
-        console.log('saved settings!')
     },
     loadSettings: function() {
         var retrievedObject = localStorage.getItem('autokraft_options');
         if (retrievedObject != null) {
-            console.debug('Loaded:', JSON.parse(retrievedObject));
-            options = JSON.parse(retrievedObject);
+            var loadedOptions = JSON.parse(retrievedObject);
+            options = this.updateSettings(loadedOptions, options);
         }
+    },
+    updateSettings: function(currentSettings, newSettings) {
+        return $.extend(true, {}, currentSettings, newSettings);
     },
     start: function () {
         this.loop = setInterval(this.doStuff.bind(this), options.interval);
