@@ -260,7 +260,7 @@ Manager.prototype = {
         }
     },
     updateSettings: function(currentSettings, newSettings) {
-        return $.extend(true, {}, currentSettings, newSettings);
+        return $.extend(true, newSettings, currentSettings);
     },
     start: function () {
         this.loop = setInterval(this.doStuff.bind(this), options.interval);
