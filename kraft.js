@@ -1,10 +1,15 @@
 //css styles
 var stylesheet = document.styleSheets;
-stylesheet[0].addRule('.overResLimit', '{ border: 1px solid red}', 0);
-stylesheet[0].addRule('.resLimitReached', '{ color: maroon } ', 0);
+stylesheet[0].insertRule('.overResLimit { border: 1px solid red}', stylesheet[0].length);
+stylesheet[0].insertRule('.resLimitReached { color: maroon } ', stylesheet[0].length);
+stylesheet[0].insertRule('.craftline { width: 500px; }', stylesheet[0].length);
+stylesheet[0].insertRule('.autokraft { width: 500px; float: left; }', stylesheet[0].length);
+stylesheet[0].insertRule('.subpanel { float: left; }', stylesheet[0].length);
+//yep, i suck with css
+stylesheet[0].insertRule('.craftline .tab-pane.fade { display: none; }', stylesheet[0].length);
+stylesheet[0].insertRule('.craftline .tab-pane.fade.active { display: block !important; }', stylesheet[0].length);
 
 var options = {
-    debug: true,
     interval: 1000,
 
     auto: {
@@ -72,7 +77,7 @@ var options = {
                     uses: ["block","structure","coin"]
                 }
             },
-            threshold: 60
+            threshold: "60"
         },
 
         craft: {
@@ -174,7 +179,7 @@ var options = {
                     cost: {"coin": 2500}
                 }
             },
-            threshold: 100
+            threshold: "100"
         }
     }
 };
@@ -322,6 +327,7 @@ Manager.prototype = {
                 && this.canCraft(item)
                 && this.craftIsUnlocked(item)
                 && this.exceedCraftThreshold(item)
+                && this.lessThanMaxValue(item)
             ) {
                 crafting(item);
             }
@@ -362,11 +368,16 @@ Manager.prototype = {
         }
         return result;
     },
-    canCraft: function (name) {
-        if ($(getCraftSelector(name) + '.unavailable').length == 0) {
-            return true
+    lessThanMaxValue: function(name) {
+        var keyName = 'limit';
+        if ( options.auto.craft.items[name].hasOwnProperty(keyName) > 0 &&
+            craft[name] >= options.auto.craft.items[name][keyName] ) {
+            return false;
         }
-        return false;
+        return true;
+    },
+    canCraft: function (name) {
+        return $(getCraftSelector(name) + '.unavailable').length == 0;
     },
     craftIsUnlocked: function (name) {
         return ( unlocked.hasOwnProperty('.craft_' + name) && unlocked['.craft_' + name] == 1);
@@ -395,6 +406,40 @@ var toggleOptionItem = function (item) {
         kraftManager.saveSettings();
     }
 };
+
+function switchAll(type, state) {
+    var selector = '';
+    switch (type) {
+        case 'build' :
+            selector = 'build';
+            break;
+        case 'craft':
+            selector = 'craft';
+            break;
+        default:
+            return;
+    }
+    Object.keys(options.auto[selector].items).forEach( function(k) {
+        options.auto[selector].items[k].enabled = state;
+        $('input[name="'+ k + '"].autokraft_option').prop('checked', state);
+    });
+    kraftManager.saveSettings();
+};
+
+var updateMaxValueCrafting = function(itemName) {
+    var defaultValue = options.auto.craft.items[itemName].hasOwnProperty('limit') ?
+        options.auto.craft.items[itemName].limit
+        : 0;
+    var newValue = parseInt(prompt("Enter new limit for [" + itemName + "]. 0 is for no limit", defaultValue));
+    if (isNaN(newValue)) {
+        return defaultValue;
+    }
+    if (newValue < 0) { newValue = 0 };
+    options.auto.craft.items[itemName].limit = newValue;
+    $('span.craft_limit_setter[data-name='+itemName+']')[0].innerHTML = newValue;
+    return newValue;
+};
+
 var updateThreshold = function (type) {
     var curType = null;
     switch (type) {
@@ -420,56 +465,107 @@ var updateThreshold = function (type) {
         //update text
         $('#' + curType + '_thresh_value').text(newValue);
     }
+    kraftManager.saveSettings();
 };
 
 var appendAutoTab = function () {
+    if ($('#autokraftpane').length) {
+        console.log('already created');
+        return;
+    }
     var htmlTab = '<li id="autokraftpane"><a data-toggle="tab" href="#autokraft" aria-expanded="false">AutoKraft</li>';
     $('#legacypane').after(htmlTab);
 
     var buildingsList, craftingList, buildingThreshold, craftingThreshold;
     buildingsList = craftingList = '';
 
+    var akTabs =  '<ul class="nav nav-tabs">'
+        + '<li class="active"><a data-toggle="tab" href="#ak_Build">Buildings</a></li>'
+        + '<li><a data-toggle="tab"  href="#ak_Craft">Crafting</a></li>'
+        + '</ul>';
+
+    var akBuildTab = '<div id="ak_Build" class="tab-pane fade active in"></div>';
+    var akBuildButtons = '<div>'
+        + '<button class="btn btn-default option_threshold" type="button" id="build_thresh">'
+        + 'Threshold <span id="build_thresh_value">' + options.auto.build.threshold + '</span> %'
+        + '</button>'
+        + '<button class="enable_toggle btn btn-default" type="button" data-state=true data-type="build">Enable all</button>'
+        + '<button class="enable_toggle btn btn-default" type="button" data-state=false data-type="build">Disable all</button>'
+        + '</div>';
+
+    var akCraftTab = '<div id="ak_Craft" class="tab-pane fade"></div>';
+    var akCraftButtons = '<div>'
+        + '<button class="btn btn-default option_threshold" type="button" id="craft_thresh">'
+        + 'Threshold <span id="craft_thresh_value">' + options.auto.craft.threshold + '</span> %'
+        + '</button>'
+        + '<button class="enable_toggle btn btn-default" type="button" data-state=true data-type="craft">Enable all</button>'
+        + '<button class="enable_toggle btn btn-default" type="button" data-state=false data-type="craft">Disable all</button>'
+        + '</div>';
+
+    //create build items tab
+    var akBuildTable = '<table class="table table-hover"><thead><th>enable</th><th>name</th></thead>';
+
     for (var item in options.auto.build.items) {
         var checked = '';
         if (options.auto.build.items[item].enabled) {
             checked = 'checked';
         }
-        buildingsList += '<div class="block" style="display: inline-block;"><input name="' + item + '" type="checkbox" ' + checked + ' class="autokraft_option"/>' + item + '</div>';
+        akBuildTable +=
+        '<td><input name="' + item + '" type="checkbox" ' + checked + ' class="autokraft_option"></td>'
+        + '<td>' + item + '</td>'
+        + '</tr>';
     }
+    akBuildTable += '</table>';
 
+    //create craft items table
+    var akCraftTable = '<table class="table table-hover"><thead><th>enable</th><th>name</th><th>max amount</th></thead>';
     for (var item in options.auto.craft.items) {
         var checked = '';
         if (options.auto.craft.items[item].enabled) {
             checked = 'checked';
         }
-        craftingList += '<div class="block" style="display: inline-block;"> <input name="' + item + '" type="checkbox" ' + checked + ' class="autokraft_option" />' + item + '</div>';
+        akCraftTable +=
+                '<td><input name="' + item + '" type="checkbox" '+checked+' class="autokraft_option"></td>'
+                + '<td>' + item + '</td>'
+                + '<td><span class="craft_limit_setter" data-name="'+item+'">' + options.auto.craft.items[item].limit + '</span></td>'
+                + '</tr>';
     }
+    akCraftTable += '</table>';
 
-    buildingThreshold = '<div><span id="build_thresh" class="option_threshold">Building threshold:<span id="build_thresh_value">' + options.auto.build.threshold + '</span>% </span></div>';
-    craftingThreshold = '<div><span id="craft_thresh" class="option_threshold">Crafting threshold:<span id="craft_thresh_value">' + options.auto.craft.threshold + '</span>% </span></div>';
+    var htmlSettings = '<div id="autokraft" class="autokraft tab-pane fade active in"><h3>AutoKraft settings</h3>'
+            +'<div class="craftline"></div></div>';
 
-    var htmlSettings = '<div id="autokraft" class="autokraft tab-pane fade"><h3>AutoKraft settings</h3>' +
-        '<div class="craftline" style="margin-left: 500px;">' +
-        '<div id="Build"><h4>Buildings</h4>' +
-        buildingThreshold +
-        buildingsList +
-        '</div>' +
-        '<div id="Craft"><h4>Crafting</h4>' + craftingThreshold + craftingList + '</div>' +
-        '</div></div>';
     $('#legacy').after(htmlSettings);
+    $(akTabs).appendTo( ('#autokraft .craftline') );
+    $(akBuildTab).appendTo( ('#autokraft .craftline') );
+    $(akCraftTab).appendTo( ('#autokraft .craftline') );
+    $(akBuildButtons).appendTo('#ak_Build');
+    $(akBuildTable).appendTo('#ak_Build');
+    $(akCraftButtons).appendTo('#ak_Craft');
+    $(akCraftTable).appendTo('#ak_Craft');
+
+    //$('#autokraftpane .craftline')[0].appendChild(akCraftTab);
+    //$('#ak_Craft').appendChild(akCraftButtons);
+
     $('.autokraft_option').on('click', function (e) {
         toggleOptionItem(this.name);
     });
     $('.option_threshold').on('click', function (e) {
         updateThreshold(this.id)
     });
+    $('.enable_toggle').on('click', function(e){
+        switchAll($(this).data('type'), $(this).data('state'));
+    })
+    $('.craft_limit_setter').on('click', function(e){
+        updateMaxValueCrafting($(this).data('name'));
+    })
 
 };
 
 var appendGamblingBtn = function() {
     var html = '<button onclick=\'dobet(100)\')>Bet doubling</button>';
     $('.casinolog').before(html);
-}
+};
 
 appendGamblingBtn();
 
