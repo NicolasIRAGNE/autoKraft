@@ -1,4 +1,4 @@
-#AutoKraft v 0.0.1
+#AutoKraft v 0.1.0
 
 Simple auto-clicker for [KeepCraft](http://morpheox.github.io/Kraft/) game
 

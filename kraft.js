@@ -370,7 +370,8 @@ Manager.prototype = {
     },
     lessThanMaxValue: function(name) {
         var keyName = 'limit';
-        if ( options.auto.craft.items[name].hasOwnProperty(keyName) > 0 &&
+        if ( options.auto.craft.items[name].hasOwnProperty(keyName) &&
+            options.auto.craft.items[name][keyName] > 0 &&
             craft[name] >= options.auto.craft.items[name][keyName] ) {
             return false;
         }
