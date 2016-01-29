@@ -586,9 +586,8 @@ var appendAutoTab = function () {
 
     var akScienceTable = '<div>';
     for (var item in options.auto.science.items) {
-        console.debug(item, options.auto.science.items)
         var checked = '';
-        if (options.auto.craft.items[item]) {
+        if (options.auto.science.items[item]) {
             checked = 'checked';
         }
         akScienceTable += '<span class="checkbox-inline"><input name="' + item + '" type="checkbox" ' + checked
