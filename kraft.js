@@ -180,6 +180,15 @@ var options = {
                 }
             },
             threshold: "100"
+        },
+
+        science: {
+            threshold: "60",
+            items: {
+                economy: false,
+                science: false,
+                military: false
+            }
         }
     }
 };
@@ -285,6 +294,7 @@ Manager.prototype = {
         if (options.auto.craft.enabled) {
             this.craft();
         }
+        this.doScience();
         this.updateResourceColors();
     },
     updateResourceColors: function() {
@@ -333,6 +343,27 @@ Manager.prototype = {
             }
         }
     },
+    doScience: function() {
+        if (!this.exceedScienceThreshold()) {
+            return;
+        }
+        var science = null;
+        for (var item in options.auto.science.items) {
+            if (options.auto.science.items[item] == true) {
+                if (science == null) {
+                    science = { name: item, value: bonus[item] }
+                } else {
+                    if ( bonus[item] < science.value ) {
+                        science = { name: item, value: bonus[item] }
+                    }
+                }
+            }
+        }
+
+        if (science != null) {
+            develop(science.name)
+        }
+    },
     getResourceValue: function (name) {
         if (craft.hasOwnProperty(name)) {
             return craft[name];
@@ -367,6 +398,9 @@ Manager.prototype = {
             }
         }
         return result;
+    },
+    exceedScienceThreshold: function() {
+        return ( items.knowledge >= maximums.knowledge * options.auto.science.threshold / 100 );
     },
     lessThanMaxValue: function(name) {
         var keyName = 'limit';
@@ -404,6 +438,10 @@ var toggleOptionItem = function (item) {
     }
     if (options.auto.craft.items.hasOwnProperty(item)) {
         options.auto.craft.items[item].enabled = !options.auto.craft.items[item].enabled;
+        kraftManager.saveSettings();
+    }
+    if (options.auto.science.items.hasOwnProperty(item)) {
+        options.auto.science.items[item] = !options.auto.science.items[item];
         kraftManager.saveSettings();
     }
 };
@@ -450,6 +488,9 @@ var updateThreshold = function (type) {
         case 'craft_thresh':
             curType = 'craft';
             break;
+        case 'science_thresh':
+            curType = 'science';
+            break;
         default:
             return false;
     }
@@ -483,6 +524,7 @@ var appendAutoTab = function () {
     var akTabs =  '<ul class="nav nav-tabs">'
         + '<li class="active"><a data-toggle="tab" href="#ak_Build">Buildings</a></li>'
         + '<li><a data-toggle="tab"  href="#ak_Craft">Crafting</a></li>'
+        + '<li><a data-toggle="tab"  href="#ak_Science">Science</a></li>'
         + '</ul>';
 
     var akBuildTab = '<div id="ak_Build" class="tab-pane fade active in"></div>';
@@ -502,6 +544,14 @@ var appendAutoTab = function () {
         + '<button class="enable_toggle btn btn-default" type="button" data-state=true data-type="craft">Enable all</button>'
         + '<button class="enable_toggle btn btn-default" type="button" data-state=false data-type="craft">Disable all</button>'
         + '</div>';
+
+    var akScienceTab = '<div id="ak_Science" class="tab-pane fade"></div>';
+    var akScienceButtons = '<div>'
+        + '<button class="btn btn-default option_threshold" type="button" id="science_thresh">'
+        + 'Threshold <span id="science_thresh_value">' + options.auto.science.threshold + '</span> %'
+        + '</button>'
+        + '</div>';
+
 
     //create build items tab
     var akBuildTable = '<table class="table table-hover"><thead><th>enable</th><th>name</th></thead>';
@@ -533,6 +583,20 @@ var appendAutoTab = function () {
     }
     akCraftTable += '</table>';
 
+
+    var akScienceTable = '<div>';
+    for (var item in options.auto.science.items) {
+        console.debug(item, options.auto.science.items)
+        var checked = '';
+        if (options.auto.craft.items[item]) {
+            checked = 'checked';
+        }
+        akScienceTable += '<span class="checkbox-inline"><input name="' + item + '" type="checkbox" ' + checked
+            + ' class="autokraft_option">&nbsp;' + item + '</span>';
+
+    }
+    akScienceTable += '</div>';
+
     var htmlSettings = '<div id="autokraft" class="autokraft tab-pane fade active in"><h3>AutoKraft settings</h3>'
             +'<div class="craftline"></div></div>';
 
@@ -540,13 +604,13 @@ var appendAutoTab = function () {
     $(akTabs).appendTo( ('#autokraft .craftline') );
     $(akBuildTab).appendTo( ('#autokraft .craftline') );
     $(akCraftTab).appendTo( ('#autokraft .craftline') );
+    $(akScienceTab).appendTo( ('#autokraft .craftline') );
     $(akBuildButtons).appendTo('#ak_Build');
     $(akBuildTable).appendTo('#ak_Build');
     $(akCraftButtons).appendTo('#ak_Craft');
     $(akCraftTable).appendTo('#ak_Craft');
-
-    //$('#autokraftpane .craftline')[0].appendChild(akCraftTab);
-    //$('#ak_Craft').appendChild(akCraftButtons);
+    $(akScienceButtons).appendTo('#ak_Science');
+    $(akScienceTable).appendTo('#ak_Science');
 
     $('.autokraft_option').on('click', function (e) {
         toggleOptionItem(this.name);
@@ -556,7 +620,7 @@ var appendAutoTab = function () {
     });
     $('.enable_toggle').on('click', function(e){
         switchAll($(this).data('type'), $(this).data('state'));
-    })
+    });
     $('.craft_limit_setter').on('click', function(e){
         updateMaxValueCrafting($(this).data('name'));
     })
