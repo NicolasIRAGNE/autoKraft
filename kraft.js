@@ -640,7 +640,7 @@ var appendAutoTab = function () {
         + '<li><a data-toggle="tab"  href="#ak_Science">Science</a></li>'
         + '</ul>';
 
-    var akSettingsTab = '<div id="ak_Settings" class="tab-pane fade"></div>';
+    var akSettingsTab = '<div id="ak_Settings" class="tab-pane fade active in"></div>';
     var akSettingsButtons = '<div>'
             + '<input name="ak_enable" type="checkbox" '  +
         ( (options.auto.enabled == true) ? ' checked ' : '' )
