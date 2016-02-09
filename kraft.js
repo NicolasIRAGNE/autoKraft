@@ -64,17 +64,125 @@ var options = {
                     enabled: false,
                     uses: ["wood"]
                 },
-                statue: {
-                    enabled: false,
-                    uses: ["bronze"]
-                },
                 kiln: {
                     enabled: false,
                     uses: ["mineral", "block"]
                 },
+                statue: {
+                    enabled: false,
+                    uses: ["bronze"]
+                },
                 towncenter: {
                     enabled: false,
                     uses: ["block","structure","coin"]
+                },
+                workbench: {
+                    enabled: false,
+                    uses: ["steel"]
+                },
+                castle: {
+                    enabled: false,
+                    uses: ["block","gold"]
+                },
+                relic: {
+                    enabled: false,
+                    uses: ["token"]
+                },
+                shipyard: {
+                    enabled: false,
+                    uses: ["wood","structure"]
+                },
+                docks: {
+                    enabled: false,
+                    uses: ["iron","plank"]
+                },
+                bank: {
+                    enabled: false,
+                    uses: ["block","steel","coin"]
+                },
+                crusher: {
+                    enabled: false,
+                    uses: ["copper","iron","steel"]
+                },
+                blockyard: {
+                    enabled: false,
+                    uses: ["bronze","pickaze"]
+                },
+                bunker: {
+                    enabled: false,
+                    uses: ["frame","pickaxe"]
+                },
+                laboratory: {
+                    enabled: false,
+                    uses: ["frame","glass"]
+                },
+                scienceoutpost: {
+                    enabled: false,
+                    uses: ["frame","glass","territory"]
+                },
+                tradeoutpost: {
+                    enabled: false,
+                    uses: ["frame","coin","territory"]
+                },
+                militaryoutpost: {
+                    enabled: false,
+                    uses: ["frame","sword","armor","territory"]
+                },
+                quarry: {
+                    enabled: false,
+                    uses: ["mineral","pickaxe"]
+                },
+                carpentry: {
+                    enabled: false,
+                    uses: ["frame","brick"]
+                },
+                blastfurnace: {
+                    enabled: false,
+                    uses: ["brick"]
+                },
+                compressor: {
+                    enabled: false,
+                    uses: ["brick","glass","frame"]
+                },
+                share: {
+                    enabled: false,
+                    uses: ["token"]
+                },
+                repository: {
+                    enabled: false,
+                    uses: ["block","glass","bottlecost"]
+                },
+                trainstation: {
+                    enabled: false,
+                    uses: ["wood","iron","frame"]
+                },
+                workshop: {
+                    enabled: false,
+                    uses: ["brick","plate","engine"]
+                },
+                powerplant: {
+                    enabled: false,
+                    uses: ["frame","plate"]
+                },
+                cementkiln: {
+                    enabled: false,
+                    uses: ["steel","plate"]
+                },
+                university: {
+                    enabled: false,
+                    uses: ["cement","brick","frame"]
+                },
+                concretemixer: {
+                    enabled: false,
+                    uses: ["brick","plate"]
+                },
+                toolfactory: {
+                    enabled: false,
+                    uses: ["brick","concrete"]
+                },
+                barracks: {
+                    enabled: false,
+                    uses: ["concrete"]
                 }
             },
             threshold: "60"
