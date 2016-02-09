@@ -14,7 +14,7 @@ var options = {
 
     auto: {
         build: {
-            enabled: true,
+            enabled: false,
             items: {
                 lumbermill: {
                     enabled: true,
@@ -384,16 +384,16 @@ Manager.prototype = {
     updateSettings: function(currentSettings, newSettings) {
         return $.extend(true, newSettings, currentSettings);
     },
-    start: function () {
-        this.loop = setInterval(this.doStuff.bind(this), options.interval);
+    init: function() {
         this.loadSettings();
         appendAutoTab();
-        console.log('Started');
+    },
+    start: function () {
+        this.loop = setInterval(this.doStuff.bind(this), options.interval);
     },
     stop: function () {
         clearInterval(this.loop);
         this.loop = null;
-        console.log('Stopped');
     },
     doStuff: function () {
         if (options.auto.build.enabled) {
@@ -539,6 +539,11 @@ Manager.prototype = {
     }
 };
 
+var toggleAk = function() {
+    (options.auto.enabled == true) ? kraftManager.stop() : kraftManager.start();
+    options.auto.enabled = !options.auto.enabled;
+}
+
 var toggleOptionItem = function (item) {
     if (options.auto.build.items.hasOwnProperty(item)) {
         options.auto.build.items[item].enabled = !options.auto.build.items[item].enabled;
@@ -620,7 +625,6 @@ var updateThreshold = function (type) {
 
 var appendAutoTab = function () {
     if ($('#autokraftpane').length) {
-        console.log('already created');
         return;
     }
     var htmlTab = '<li id="autokraftpane"><a data-toggle="tab" href="#autokraft" aria-expanded="false">AutoKraft</li>';
@@ -630,12 +634,21 @@ var appendAutoTab = function () {
     buildingsList = craftingList = '';
 
     var akTabs =  '<ul class="nav nav-tabs">'
-        + '<li class="active"><a data-toggle="tab" href="#ak_Build">Buildings</a></li>'
+        + '<li class="active"><a data-toggle="tab" href="#ak_Settings">Settings</a></li>'
+        + '<li><a data-toggle="tab" href="#ak_Build">Buildings</a></li>'
         + '<li><a data-toggle="tab"  href="#ak_Craft">Crafting</a></li>'
         + '<li><a data-toggle="tab"  href="#ak_Science">Science</a></li>'
         + '</ul>';
 
-    var akBuildTab = '<div id="ak_Build" class="tab-pane fade active in"></div>';
+    var akSettingsTab = '<div id="ak_Settings" class="tab-pane fade"></div>';
+    var akSettingsButtons = '<div>'
+            + '<input name="ak_enable" type="checkbox" '  +
+        ( (options.auto.enabled == true) ? ' checked ' : '' )
+        + ' class="autokraft_option" onclick="toggleAk();"> Enable'
+        + '</div>';
+
+
+    var akBuildTab = '<div id="ak_Build" class="tab-pane fade"></div>';
     var akBuildButtons = '<div>'
         + '<button class="btn btn-default option_threshold" type="button" id="build_thresh">'
         + 'Threshold <span id="build_thresh_value">' + options.auto.build.threshold + '</span> %'
@@ -704,14 +717,16 @@ var appendAutoTab = function () {
     }
     akScienceTable += '</div>';
 
-    var htmlSettings = '<div id="autokraft" class="autokraft tab-pane fade active in"><h3>AutoKraft settings</h3>'
+    var htmlSettings = '<div id="autokraft" class="autokraft tab-pane fade"><h3>AutoKraft settings</h3>'
             +'<div class="craftline"></div></div>';
 
     $('#legacy').after(htmlSettings);
     $(akTabs).appendTo( ('#autokraft .craftline') );
+    $(akSettingsTab).appendTo( ('#autokraft .craftline') );
     $(akBuildTab).appendTo( ('#autokraft .craftline') );
     $(akCraftTab).appendTo( ('#autokraft .craftline') );
     $(akScienceTab).appendTo( ('#autokraft .craftline') );
+    $(akSettingsButtons).appendTo('#ak_Settings');
     $(akBuildButtons).appendTo('#ak_Build');
     $(akBuildTable).appendTo('#ak_Build');
     $(akCraftButtons).appendTo('#ak_Craft');
@@ -742,7 +757,7 @@ var appendGamblingBtn = function() {
 appendGamblingBtn();
 
 var kraftManager = new Manager();
-kraftManager.start();
+kraftManager.init();
 
 
 function dobet(roundsAmount) {
