@@ -378,6 +378,7 @@ Manager.prototype = {
         var retrievedObject = localStorage.getItem('autokraft_options');
         if (retrievedObject != null) {
             var loadedOptions = JSON.parse(retrievedObject);
+            loadedOptions.auto.enabled = false; // ak should be disabled by default
             options = this.updateSettings(loadedOptions, options);
         }
     },
@@ -629,9 +630,6 @@ var appendAutoTab = function () {
     }
     var htmlTab = '<li id="autokraftpane"><a data-toggle="tab" href="#autokraft" aria-expanded="false">AutoKraft</li>';
     $('#legacypane').after(htmlTab);
-
-    var buildingsList, craftingList, buildingThreshold, craftingThreshold;
-    buildingsList = craftingList = '';
 
     var akTabs =  '<ul class="nav nav-tabs">'
         + '<li class="active"><a data-toggle="tab" href="#ak_Settings">Settings</a></li>'
