@@ -391,18 +391,15 @@ Manager.prototype = {
     },
     start: function () {
         this.loop = setInterval(this.doStuff.bind(this), options.interval);
+        console.debug(options.interval, this.loop);
     },
     stop: function () {
         clearInterval(this.loop);
         this.loop = null;
     },
     doStuff: function () {
-        if (options.auto.build.enabled) {
-            this.build();
-        }
-        if (options.auto.craft.enabled) {
-            this.craft();
-        }
+        this.build();
+        this.craft();
         this.doScience();
         this.updateResourceColors();
     },
@@ -498,12 +495,14 @@ Manager.prototype = {
         var limitedResources = options.auto.craft.items[name].cost;
         var result = true;
         for (var resourceName in limitedResources) {
-            var resourceCost = limitedResources[resourceName];
-            if (this.getResourceValue(resourceName) < maximums[resourceName] * options.auto.craft.threshold / 100 ||
-                this.getResourceValue(resourceName) < resourceCost
-            ) {
-                result = false;
-                break;
+            if (limitedResources.hasOwnProperty(resourceName) ){
+                var resourceCost = limitedResources[resourceName];
+                if (this.getResourceValue(resourceName) < maximums[resourceName] * options.auto.craft.threshold / 100 ||
+                    this.getResourceValue(resourceName) < resourceCost
+                ) {
+                    result = false;
+                    break;
+                }
             }
         }
         return result;
