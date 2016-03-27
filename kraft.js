@@ -187,7 +187,6 @@ var options = {
             },
             threshold: "60"
         },
-
         craft: {
             enabled: true,
             items: {
@@ -289,7 +288,16 @@ var options = {
             },
             threshold: "100"
         },
-
+        explore: { "enabled": false, items: {
+            "pikeman": { enabled: false, limit: 2, cost: { "food": 50, "spear": 1} },
+            "swordman": { enabled: false, limit: 0, cost: { "food": 150, "sword": 1} },
+            "medic": { enabled: false, limit: 0, cost: { "food": 1000, "coin": 20} },
+            "bersek": { enabled: false, limit: 0, cost: { "food": 50, "greatsword": 1} },
+            "warelephant": { enabled: false, limit: 0, cost: { "supplies": 100, "elephant": 1} },
+            "musketeer": { enabled: false, limit: 0, cost: { "coin": 100, "musket": 1, "armor": 1} },
+            "lighttank": { enabled: false, limit: 0, cost: { "plate": 200, "engine": 2} },
+            "knight": { enabled: false, limit: 0, cost: { "swordman": 100, "horse": 1, "armor": 1} }
+        }},
         science: {
             threshold: "60",
             items: {
@@ -297,9 +305,25 @@ var options = {
                 science: false,
                 military: false
             }
+        },
+        sources: {
+            "food":"items",
+            "plate":"craft",
+            "engine":"craft",
+            "swordman":"people",
+            "horse":"craft",
+            "armor":"craft",
+            "coin":"craft",
+            "sword":"craft",
+            "spear":"craft",
+            "greatsword":"craft",
+            "musket":"craft",
+            "supplies":"craft",
+            "elephant":"craft"
         }
     }
 };
+
 
 var getBuildSelector = function (name) {
     var selector = null;
@@ -391,7 +415,6 @@ Manager.prototype = {
     },
     start: function () {
         this.loop = setInterval(this.doStuff.bind(this), options.interval);
-        console.debug(options.interval, this.loop);
     },
     stop: function () {
         clearInterval(this.loop);
@@ -400,6 +423,7 @@ Manager.prototype = {
     doStuff: function () {
         this.build();
         this.craft();
+        this.explore();
         this.doScience();
         this.updateResourceColors();
     },
@@ -439,14 +463,41 @@ Manager.prototype = {
     craft: function () {
         var craftItems = options.auto.craft.items;
         for (var item in craftItems) {
-            if (craftItems[item].enabled == true
-                && this.canCraft(item)
-                && this.craftIsUnlocked(item)
-                && this.exceedCraftThreshold(item)
-                && this.lessThanMaxValue(item)
-            ) {
-                crafting(item);
+            if (craftItems.hasOwnProperty(item)) {
+                if (craftItems[item].enabled == true
+                    && this.canCraft(item)
+                    && this.craftIsUnlocked(item)
+                    && this.exceedCraftThreshold(item)
+                    && this.lessThanMaxValue(item)
+                ) {
+                    crafting(item);
+                }
             }
+        }
+    },
+    explore: function() {
+        //build units
+        for (var unit in options.auto.explore.items){
+            if (options.auto.explore.items.hasOwnProperty(unit)) {
+                var u = options.auto.explore.items[unit];
+                if (u.enabled
+                    && u.limit > people[unit]
+                    && canBuildUnit(unit, u.cost)
+                )//limit enabled cost
+                {
+                    hire(unit);
+                }
+            }
+        }
+
+        if (window.unlocked['.expedition'] == 1
+            && options.auto.explore.enabled) {
+            if ( ( $('.encounter').is(':visible') )) {
+                fight();
+            } else {
+                expedition();
+            }
+
         }
     },
     doScience: function() {
@@ -455,12 +506,14 @@ Manager.prototype = {
         }
         var science = null;
         for (var item in options.auto.science.items) {
-            if (options.auto.science.items[item] == true) {
-                if (science == null) {
-                    science = { name: item, value: bonus[item] }
-                } else {
-                    if ( bonus[item] < science.value ) {
-                        science = { name: item, value: bonus[item] }
+            if (options.auto.science.items.hasOwnProperty(item)) {
+                if (options.auto.science.items[item] == true) {
+                    if (science == null) {
+                        science = {name: item, value: bonus[item]}
+                    } else {
+                        if (bonus[item] < science.value) {
+                            science = {name: item, value: bonus[item]}
+                        }
                     }
                 }
             }
@@ -483,10 +536,12 @@ Manager.prototype = {
         var limitedResources = options.auto.build.items[name].uses;
         var result = true;
         for (var resIdx in limitedResources) {
-            var resourceName = limitedResources[resIdx];
-            if (this.getResourceValue(resourceName) < maximums[resourceName] * options.auto.build.threshold / 100) {
-                result = false;
-                break;
+            if ( limitedResources.hasOwnProperty(resIdx) ) {
+                var resourceName = limitedResources[resIdx];
+                if (this.getResourceValue(resourceName) < maximums[resourceName] * options.auto.build.threshold / 100) {
+                    result = false;
+                    break;
+                }
             }
         }
         return result;
@@ -512,12 +567,9 @@ Manager.prototype = {
     },
     lessThanMaxValue: function(name) {
         var keyName = 'limit';
-        if ( options.auto.craft.items[name].hasOwnProperty(keyName) &&
-            options.auto.craft.items[name][keyName] > 0 &&
-            craft[name] >= options.auto.craft.items[name][keyName] ) {
-            return false;
-        }
-        return true;
+        return !( options.auto.craft.items[name].hasOwnProperty(keyName) &&
+        options.auto.craft.items[name][keyName] > 0 &&
+        craft[name] >= options.auto.craft.items[name][keyName] );
     },
     canCraft: function (name) {
         return $(getCraftSelector(name) + '.unavailable').length == 0;
@@ -532,17 +584,18 @@ Manager.prototype = {
         return ( unlocked.hasOwnProperty('.build_' + name) && unlocked['.build_' + name] == 1);
     },
     canBuild: function (name) {
-        if ($(getBuildSelector(name) + '.unavailable').length == 0) {
-            return true
-        }
-        return false;
+        return  ($(getBuildSelector(name) + '.unavailable').length == 0);
     }
 };
 
 var toggleAk = function() {
     (options.auto.enabled == true) ? kraftManager.stop() : kraftManager.start();
     options.auto.enabled = !options.auto.enabled;
-}
+};
+
+var toggleAkExplore = function() {
+    options.auto.explore.enabled = !options.auto.explore.enabled;
+};
 
 var toggleOptionItem = function (item) {
     if (options.auto.build.items.hasOwnProperty(item)) {
@@ -555,6 +608,10 @@ var toggleOptionItem = function (item) {
     }
     if (options.auto.science.items.hasOwnProperty(item)) {
         options.auto.science.items[item] = !options.auto.science.items[item];
+        kraftManager.saveSettings();
+    }
+    if (options.auto.explore.items.hasOwnProperty(item)) {
+        options.auto.explore.items[item].enabled = !options.auto.explore.items[item].enabled;
         kraftManager.saveSettings();
     }
 };
@@ -576,19 +633,20 @@ function switchAll(type, state) {
         $('input[name="'+ k + '"].autokraft_option').prop('checked', state);
     });
     kraftManager.saveSettings();
-};
+}
 
-var updateMaxValueCrafting = function(itemName) {
-    var defaultValue = options.auto.craft.items[itemName].hasOwnProperty('limit') ?
-        options.auto.craft.items[itemName].limit
+var updateMaxValueLimit = function(type, itemName) {
+    var defaultValue = options.auto[type].items[itemName].hasOwnProperty('limit') ?
+        options.auto[type].items[itemName].limit
         : 0;
     var newValue = parseInt(prompt("Enter new limit for [" + itemName + "]. 0 is for no limit", defaultValue));
     if (isNaN(newValue)) {
         return defaultValue;
     }
-    if (newValue < 0) { newValue = 0 };
-    options.auto.craft.items[itemName].limit = newValue;
-    $('span.craft_limit_setter[data-name='+itemName+']')[0].innerHTML = newValue;
+    if (newValue < 0) { newValue = 0 }
+    options.auto[type].items[itemName].limit = newValue;
+    $('span.' + type + '_limit_setter[data-name='+itemName+']')[0].innerHTML = newValue;
+    kraftManager.saveSettings();
     return newValue;
 };
 
@@ -635,6 +693,7 @@ var appendAutoTab = function () {
         + '<li><a data-toggle="tab" href="#ak_Build">Buildings</a></li>'
         + '<li><a data-toggle="tab"  href="#ak_Craft">Crafting</a></li>'
         + '<li><a data-toggle="tab"  href="#ak_Science">Science</a></li>'
+        + '<li><a data-toggle="tab"  href="#ak_Explore">Explore</a></li>'
         + '</ul>';
 
     var akSettingsTab = '<div id="ak_Settings" class="tab-pane fade active in"></div>';
@@ -670,10 +729,16 @@ var appendAutoTab = function () {
         + '</button>'
         + '</div>';
 
+    var akExploreTab = '<div id="ak_Explore" class="tab-pane fade"></div>';
+    var akExploreButtons = '<div>'
+        + '<input name="ak_explore_enable" type="checkbox" '  +
+        ( (options.auto.explore.enabled == true) ? ' checked ' : '' )
+        + ' class="autokraft_option" onclick="toggleAkExplore();">Auto exploration'
+        + '</div>';
+
 
     //create build items tab
     var akBuildTable = '<table class="table table-hover"><thead><th>enable</th><th>name</th></thead>';
-
     for (var item in options.auto.build.items) {
         var checked = '';
         if (options.auto.build.items[item].enabled) {
@@ -714,6 +779,20 @@ var appendAutoTab = function () {
     }
     akScienceTable += '</div>';
 
+    var akExploreTable = '<div>';
+    akExploreTable += '<table class="table table-hover"><thead><th>enable</th><th>name</th><th>Max amount</th></thead>';
+    for (var item in options.auto.explore.items) {
+        var checked = '';
+        if (options.auto.explore.items[item].enabled) {
+            checked = 'checked';
+        }
+        akExploreTable +=
+            '<td><input name="' + item + '" type="checkbox" '+checked+' class="autokraft_option"></td>'
+            + '<td>' + item + '</td>'
+            + '<td><span class="explore_limit_setter" data-name="'+item+'">' + options.auto.explore.items[item].limit + '</span></td>'
+            + '</tr>';
+    }
+
     var htmlSettings = '<div id="autokraft" class="autokraft tab-pane fade"><h3>AutoKraft settings</h3>'
             +'<div class="craftline"></div></div>';
 
@@ -723,6 +802,7 @@ var appendAutoTab = function () {
     $(akBuildTab).appendTo( ('#autokraft .craftline') );
     $(akCraftTab).appendTo( ('#autokraft .craftline') );
     $(akScienceTab).appendTo( ('#autokraft .craftline') );
+    $(akExploreTab).appendTo( ('#autokraft .craftline') );
     $(akSettingsButtons).appendTo('#ak_Settings');
     $(akBuildButtons).appendTo('#ak_Build');
     $(akBuildTable).appendTo('#ak_Build');
@@ -730,6 +810,8 @@ var appendAutoTab = function () {
     $(akCraftTable).appendTo('#ak_Craft');
     $(akScienceButtons).appendTo('#ak_Science');
     $(akScienceTable).appendTo('#ak_Science');
+    $(akExploreButtons).appendTo('#ak_Explore');
+    $(akExploreTable).appendTo('#ak_Explore');
 
     $('.autokraft_option').on('click', function (e) {
         toggleOptionItem(this.name);
@@ -741,59 +823,27 @@ var appendAutoTab = function () {
         switchAll($(this).data('type'), $(this).data('state'));
     });
     $('.craft_limit_setter').on('click', function(e){
-        updateMaxValueCrafting($(this).data('name'));
-    })
+        updateMaxValueLimit('craft', $(this).data('name'));
+    });
+    $('.explore_limit_setter').on('click', function(e){
+        updateMaxValueLimit('explore', $(this).data('name'));
+    });
 
 };
 
-var appendGamblingBtn = function() {
-    var html = '<button onclick=\'dobet(100)\')>Bet doubling</button>';
-    $('.casinolog').before(html);
-};
-
-appendGamblingBtn();
+function canBuildUnit(unitName, costList) {
+    for (var k in costList) {
+        if (options.auto.sources.hasOwnProperty(k) &&
+                window.unlocked['.hire_' + unitName] &&
+                window[ options.auto.sources[k] ][k] >= costList[k]
+        ) {
+            //so far so good
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
 
 var kraftManager = new Manager();
 kraftManager.init();
-
-
-function dobet(roundsAmount) {
-    var minbet, maxbet, currentBet, goldEarned, round, betLog;
-    round = 0;
-    minbet = 0.5;
-    maxbet = $('input.betamount').attr("max");
-    goldEarned = 0;
-    currentBet = minbet;
-    betLog = '';
-
-    for (var rNum = 0; rNum < roundsAmount; rNum++) {
-        // place a bet
-        if (items['gold'] < currentBet) {
-            console.log('Run out of gold to gamble!');
-            break;
-        }
-        $('input.betamount').val(currentBet);
-        bet('low');
-        // parse casino log
-        var casinoLog = $('.casinolog').text();
-        var gameResult = casinoLog.match(/Sorry/);
-        var betResult = $('.betresult').text();
-        if (gameResult != null) {
-            betLog += "[LOSE] " + currentBet + " for low, got " + betResult + "\n";
-            goldEarned = goldEarned - currentBet;
-            currentBet = currentBet * 2;
-            if (currentBet > maxbet) {
-                console.log('Maxbet exceeded! Earnings: ' + goldEarned + ' gold');
-                break;
-            }
-        } else {
-            betLog += "[WON] " + currentBet + " for low, got " + betResult + "\n";
-            goldEarned = goldEarned + currentBet;
-            currentBet = minbet;
-        }
-        round = round + 1;
-        console.log("round #" + round + ", earning: " + goldEarned);
-    }
-    console.log("Rounds played:" + round + ", earned:" + goldEarned);
-    console.log(betLog);
-}
