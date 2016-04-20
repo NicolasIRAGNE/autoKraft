@@ -288,7 +288,10 @@ var options = {
             },
             threshold: "100"
         },
-        explore: { "enabled": false, items: {
+        explore: {
+            enabled: false,
+            fight: false,
+            items: {
             "pikeman": { enabled: false, limit: 2, cost: { "food": 50, "spear": 1} },
             "swordman": { enabled: false, limit: 0, cost: { "food": 150, "sword": 1} },
             "medic": { enabled: false, limit: 0, cost: { "food": 1000, "coin": 20} },
@@ -493,7 +496,7 @@ Manager.prototype = {
         if (window.unlocked['.expedition'] == 1
             && options.auto.explore.enabled) {
             if ( ( $('.encounter').is(':visible') )) {
-                fight();
+                (options.auto.explore.fight == true) ? fight() : flee();
             } else {
                 expedition();
             }
@@ -595,6 +598,12 @@ var toggleAk = function() {
 
 var toggleAkExplore = function() {
     options.auto.explore.enabled = !options.auto.explore.enabled;
+    kraftManager.saveSettings();
+};
+
+var toggleAkExploreFight = function() {
+    options.auto.explore.fight = !options.auto.explore.fight;
+    kraftManager.saveSettings();
 };
 
 var toggleOptionItem = function (item) {
@@ -731,9 +740,13 @@ var appendAutoTab = function () {
 
     var akExploreTab = '<div id="ak_Explore" class="tab-pane fade"></div>';
     var akExploreButtons = '<div>'
-        + '<input name="ak_explore_enable" type="checkbox" '  +
+        + '<span><input name="ak_explore_enable" type="checkbox" '  +
         ( (options.auto.explore.enabled == true) ? ' checked ' : '' )
         + ' class="autokraft_option" onclick="toggleAkExplore();">Auto exploration'
+        + '</span><span><input name="ak_explore_fight" type="checkbox" ' +
+        ( (options.auto.explore.fight == true) ? ' checked ' : '' ) +
+        ' class="autokraft_option" onclick="toggleAkExploreFight()">' +
+        'Fight on exploration</span>'
         + '</div>';
 
 
