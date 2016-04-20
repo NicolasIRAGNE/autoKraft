@@ -299,7 +299,7 @@ var options = {
             "warelephant": { enabled: false, limit: 0, cost: { "supplies": 100, "elephant": 1} },
             "musketeer": { enabled: false, limit: 0, cost: { "coin": 100, "musket": 1, "armor": 1} },
             "lighttank": { enabled: false, limit: 0, cost: { "plate": 200, "engine": 2} },
-            "knight": { enabled: false, limit: 0, cost: { "swordman": 100, "horse": 1, "armor": 1} }
+            "knight": { enabled: false, limit: 0, cost: { "swordman": 1, "horse": 1, "armor": 1} }
         }},
         science: {
             threshold: "60",
@@ -415,6 +415,7 @@ Manager.prototype = {
     init: function() {
         this.loadSettings();
         appendAutoTab();
+        hotfix();
     },
     start: function () {
         this.loop = setInterval(this.doStuff.bind(this), options.interval);
@@ -484,7 +485,7 @@ Manager.prototype = {
             if (options.auto.explore.items.hasOwnProperty(unit)) {
                 var u = options.auto.explore.items[unit];
                 if (u.enabled
-                    && u.limit > people[unit]
+                    && (u.limit > people[unit])
                     && canBuildUnit(unit, u.cost)
                 )//limit enabled cost
                 {
@@ -496,7 +497,7 @@ Manager.prototype = {
         if (window.unlocked['.expedition'] == 1
             && options.auto.explore.enabled) {
             if ( ( $('.encounter').is(':visible') )) {
-                (options.auto.explore.fight == true) ? fight() : flee();
+                (options.auto.explore.fight == true) ? fight() : retreat();
             } else {
                 expedition();
             }
@@ -852,10 +853,21 @@ function canBuildUnit(unitName, costList) {
         ) {
             //so far so good
         } else {
+            console.debug(
+                options.auto.sources.hasOwnProperty(k),
+                window.unlocked['.hire_' + unitName],
+                window[ options.auto.sources[k] ][k] >= costList[k],
+                window[ options.auto.sources[k] ][k], costList[k]
+            );
+            console.log('false for ' + unitName + ' due to ' + k)
             return false;
         }
     }
     return true;
+}
+
+var hotfix = function() {
+    options.auto.explore.items.knight.cost.swordman = 1;
 }
 
 var kraftManager = new Manager();
