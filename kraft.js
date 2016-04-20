@@ -853,13 +853,6 @@ function canBuildUnit(unitName, costList) {
         ) {
             //so far so good
         } else {
-            console.debug(
-                options.auto.sources.hasOwnProperty(k),
-                window.unlocked['.hire_' + unitName],
-                window[ options.auto.sources[k] ][k] >= costList[k],
-                window[ options.auto.sources[k] ][k], costList[k]
-            );
-            console.log('false for ' + unitName + ' due to ' + k)
             return false;
         }
     }
