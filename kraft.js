@@ -1,13 +1,13 @@
 //css styles
-var stylesheet = document.styleSheets;
-stylesheet[0].insertRule('.overResLimit { border: 1px solid red}', stylesheet[0].length);
-stylesheet[0].insertRule('.resLimitReached { color: maroon } ', stylesheet[0].length);
-stylesheet[0].insertRule('.craftline { width: 500px; }', stylesheet[0].length);
-stylesheet[0].insertRule('.autokraft { width: 500px; float: left; }', stylesheet[0].length);
-stylesheet[0].insertRule('.subpanel { float: left; }', stylesheet[0].length);
+var stylesheet = document.styleSheets[1];
+stylesheet.insertRule('.overResLimit { border: 1px solid red}', stylesheet.length);
+stylesheet.insertRule('.resLimitReached { color: maroon } ', stylesheet.length);
+stylesheet.insertRule('.craftline { width: 500px; }', stylesheet.length);
+stylesheet.insertRule('.autokraft { width: 500px; float: left; }', stylesheet.length);
+stylesheet.insertRule('.subpanel { float: left; }', stylesheet.length);
 //yep, i suck with css
-stylesheet[0].insertRule('.craftline .tab-pane.fade { display: none; }', stylesheet[0].length);
-stylesheet[0].insertRule('.craftline .tab-pane.fade.active { display: block !important; }', stylesheet[0].length);
+stylesheet.insertRule('.craftline .tab-pane.fade { display: none; }', stylesheet.length);
+stylesheet.insertRule('.craftline .tab-pane.fade.active { display: block !important; }', stylesheet.length);
 
 var options = {
     interval: 1000,
